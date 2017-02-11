@@ -3,22 +3,27 @@
 
 #include "chrisUART.h"
 
-// Init UART0 @ baud with 8-bit data, one stop, no parity
+// Init UART0 @ baud with 8-bit data, one stop, no parity, FIFO mode
 // Uses pins PA0 and PA1
-// cmdHandler(char*, int) is the function which handles whole-word commands
-void initUart(uint32_t baud, void (*cmdHandler)(char*, int)){ 
+// cmdHandler is the ISR that handles receiving from the UART buffer and processing comands
+void initUart(uint32_t baud, void (*cmdHandler)(void)){
 	SysCtlPeripheralEnable(SYSCTL_PERIPH_UART0);
     SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOA);
     GPIOPinConfigure(GPIO_PA0_U0RX);
     GPIOPinConfigure(GPIO_PA1_U0TX);
     GPIOPinTypeUART(GPIO_PORTA_BASE, GPIO_PIN_0 | GPIO_PIN_1);
     UARTConfigSetExpClk(UART0_BASE, SysCtlClockGet(), baud, (UART_CONFIG_WLEN_8 | UART_CONFIG_STOP_ONE | UART_CONFIG_PAR_NONE));
-	UARTIntRegister(UART0_BASE, &uartRXIntHandler(&cmdHandler));		// Attach handler function to UART interrupts
-	UARTIntEnable(UART0_BASE, UART_INT_RX);								// Enable interrupts on reception of UART characters
+    UARTFIFOEnable(UART0_BASE);                                         // Enable queue for RX
+
+    UARTIntEnable(UART0_BASE, (UART_INT_RX | UART_INT_RT));             // Enable interrupt-triggering on reception of UART characters
+    UARTIntRegister(UART0_BASE, (cmdHandler));		                    // Attach handler function to UART interrupts
+	UARTEnable(UART0_BASE);
+
+
 }
 
-// printf over UART TX
-void chrisPrintf(char*, ...){
+// printf over UART TX - This still doesn't work perfectly
+void chrisPrintf(char* str, ...){
 	va_list argPtr;
     va_start(argPtr, str);
 
@@ -39,21 +44,5 @@ void chrisPrintf(char*, ...){
         UARTCharPut(UART0_BASE, print_buf[i]);
     }
     va_end(argPrt);
-}
-
-// Function for handling UART RX-triggered interrupts 
-void uartRXIntHandler(void (*cmdHandler)(char*, int)){
-	uint16_t buf_index = 0;
-	char rx_buf[UART_BUF_SIZE];
-	UARTIntClear(UART0_BASE, UART_INT_RX);
-	while(UARTCharsAvail(UART0_BASE){
-		if(index < UART_BUF_SIZE){
-			rx_buf[buf_index] = UARTCharGetNonBlocking(UART0_BASE);
-			// I'm not sure if we actually need this or not, blocking call
-			SysCtlDelay(SysCtlClockGet() / (1000*3)); // ~1ms
-			buf_index++;
-		}
-	}
-	cmdHandler(rx_buf, buf_index); // Pass the command and the length to the command handler function
 }
 

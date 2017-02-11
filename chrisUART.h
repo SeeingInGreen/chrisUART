@@ -11,17 +11,18 @@
 #include <string.h>				// C-string manipulation functions
 #include "inc/hw_memmap.h"		// Peripheral memory mappings.
 #include "inc/hw_types.h"
+#include "inc/hw_ints.h"        // Interrupt vector names
 #include "driverlib/gpio.h"
 #include "driverlib/pin_map.h"
+#include "driverlib/interrupt.h"// Interrupts
 #include "driverlib/sysctl.h"	
 #include "driverlib/uart.h"		// UART configuration
 	
 // Constants and global configuration parameters
-#define UART_BUF_SIZE 255		// Size of the send buffer, configure to your liking
+#define UART_BUF_SIZE 255		// Size of the TX/RX buffer, configure to your liking
 
 void initUart(uint32_t baud, void (*cmdHandler)(void));	// Init @ baud with 8-bit data, one stop, no parity
 void chrisPrintf(char*, ...);	// Printf over UART RX
-void uartRXIntHandler();	
 
 
 
